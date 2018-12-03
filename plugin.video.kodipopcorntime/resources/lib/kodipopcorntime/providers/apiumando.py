@@ -133,7 +133,7 @@ def browse(action, page, **kwargs):
     if kwargs['categ'] == 'movies':
         return {
             'proxies': _getDomains(),
-            'path': "/tv/movies/%s" %page,
+            'path': "/list",
             'params': {
                 'genre': action == 'genre' and kwargs['genre'] or 'all',
                 'sort': action == 'genre' and "seeds" or action,
@@ -144,7 +144,7 @@ def browse(action, page, **kwargs):
     else:
         if kwargs['categ'] == 'movie_test':
             return {
-				'proxies': '',
+				'proxies': '', 
 				'path': 'movie_favs',
 				'params': {
 
@@ -154,7 +154,7 @@ def browse(action, page, **kwargs):
         else:
 			return {
 				'proxies': _getDomains(),
-				'path': "/tv/%s/%s" % (kwargs['categ'], action),
+				'path': "/list/%s/%s" % (kwargs['categ'], action),
 				'params': {
 				},
 				'proxyid': _proxy_identifier

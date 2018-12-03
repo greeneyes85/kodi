@@ -70,14 +70,14 @@ class BaseContentWithSeasons(BaseContent):
             'title': result['title'],
             'originaltitle': result['title'],
             'year': int(result['year']),
-            'rating': float(int(result.get('rating').get('percentage'))/10),
-            'votes': result.get('rating').get('votes'),
-            'code': result['_id'],
-            'imdbnumber': result['_id'],
+            'rating': result.get('rating'),
+            'votes': 1,
+            'code': result['imdb'],
+            'imdbnumber': result['imdb'],
         }
-        if season == 0 and result['_id'].startswith('tt'):
+        if season == 0 and result['imdb'].startswith('tt'):
             try:
-                meta = metadata_tmdb._get_info(result['_id'], 0)
+                meta = metadata_tmdb._get_info(result['imdb'], 0)
                 castandrole = []
                 for c in meta['credits'].get("cast", []):
                     castandrole.append((c["name"], c.get("character", '')))
@@ -90,17 +90,17 @@ class BaseContentWithSeasons(BaseContent):
                     'votes': meta['vote_count'],
                     'status': meta['status'],
                     'country': meta['origin_country'][0],
-                    'code': result['_id'],
-                    'imdbnumber': result['_id'],
+                    'code': result['imdb'],
+                    'imdbnumber': result['imdb'],
                     'plot': meta['overview'],
                     'plotoutline': meta['overview'],
                     'castandrole': castandrole,
                 }
             except:
                 pass
-        if not season == 0 and result['_id'].startswith('tt'):
+        if not season == 0 and result['imdb'].startswith('tt'):
             try:
-                meta = metadata_tmdb._get_info(result['_id'], season)
+                meta = metadata_tmdb._get_info(result['imdb'], season)
                 castandrole = []
                 for c in meta['credits'].get("cast", []):
                     castandrole.append((c["name"], c.get("character", '')))
@@ -110,8 +110,8 @@ class BaseContentWithSeasons(BaseContent):
                     "tvshowtitle": result['title'],
                     'season': season,
                     'status': result['status'],
-                    'code': result['_id'],
-                    'imdbnumber': result['_id'],
+                    'code': result['imdb'],
+                    'imdbnumber': result['imdb'],
                     "plotoutline": meta['overview'] or None,
                     "plot": meta['overview'] or None,
                     'castandrole': castandrole,
@@ -121,8 +121,8 @@ class BaseContentWithSeasons(BaseContent):
                     "mediatype": "season",
                     "title": result['title'],
                     "tvshowtitle": result['title'],
-                    "plotoutline": result['synopsis'] or None,
-                    "plot": result['synopsis'] or None
+                    "plotoutline": result['description'] or None,
+                    "plot": result['description'] or None
                 }
         else:
             try:
@@ -153,13 +153,13 @@ class BaseContentWithSeasons(BaseContent):
                     raise Abort()
                 search_string = keyboard.getText()
                 search_string = search_string.replace(' ', '+')
-            search = '{domain}/{search_path}/1?keywords={keywords}'.format(
+            search = '{domain}/{search_path}?page=1&keywords={keywords}'.format(
                 domain=dom[0],
                 search_path=cls.search_path,
                 keywords=search_string,
             )
         else:
-            search = '{domain}/{search_path}/{page}?genre={genre}&sort={sort}'.format(
+            search = '{domain}/{search_path}?page={page}?genre={genre}&sort={sort}'.format(
                 domain=dom[0],
                 search_path=cls.search_path,
                 page=kwargs['page'],
@@ -180,18 +180,18 @@ class BaseContentWithSeasons(BaseContent):
         items = [
             {
                 "label": result['title'],  # "label" is required
-                "icon": result.get('images').get('poster'),
-                "thumbnail": result.get('images').get('poster'),
+                "icon": result.get('poster_med'),
+                "thumbnail": result.get('poster_med'),
                 "info": cls.get_meta_info(result, 0),
                 "properties": {
-                    "fanart_image": result.get('images').get('fanart'),
+                    "fanart_image": result.get('poster_big'),
                 },
                 "params": {
                     "endpoint": "folders",  # "endpoint" is required
                     'action': "{category}-seasons".format(category=cls.category),  # Required when calling browse or folders (Action is used to separate the content)
                     cls.id_field: result[cls.id_field],
-                    'poster': result.get('images').get('poster'),
-                    'fanart': result.get('images').get('fanart'),
+                    'poster': result.get('poster_med'),
+                    'fanart': result.get('poster_med'),
                     'tvshow': result['title']
                 },
                 "context_menu": [
@@ -205,7 +205,7 @@ class BaseContentWithSeasons(BaseContent):
                 ],
                 "replace_context_menu": True
             }
-            for result in results
+            for result in results['MovieList']
         ]
 
         # Next Page
@@ -228,7 +228,7 @@ class BaseContentWithSeasons(BaseContent):
     @classmethod
     def get_seasons(cls, dom, **kwargs):
         req = urllib2.Request(
-            '{domain}/{request_path}/{content_id}'.format(
+            '{domain}/{request_path}?imdb={content_id}'.format(
                 domain=dom[0],
                 request_path=cls.request_path,
                 content_id=kwargs[cls.id_field]
@@ -241,19 +241,12 @@ class BaseContentWithSeasons(BaseContent):
 
         response = urllib2.urlopen(req)
         result = json.loads(response.read())
-        seasons = result['episodes']
+        seasons = result
 
         season_list = sorted(list(set(
-            season['season']
-            for season in seasons
+            season
+            for season, result in seasons
         )))
-
-        try:
-            result['country']
-        except:
-            country = None
-        else:
-            country = result['country']
 
         return [
             {

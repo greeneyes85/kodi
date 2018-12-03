@@ -50,29 +50,11 @@ class Movie(BaseContent):
 
     @staticmethod
     def _get_item_icon(data):
-        return data.get('images').get('poster')
+        return data.get('poster_med')
 
     @classmethod
     def _get_item_info(cls, data):
         tagline = ''
-        try:
-            tagline_temp = ('1080p: %s seeds; ' %data.get('torrents').get('en').get('1080p').get('seed'))
-        except:
-            pass
-        else:
-            tagline += tagline_temp
-        try:
-            tagline_temp = ('720p: %s seeds; ' %data.get('torrents').get('en').get('720p').get('seed'))
-        except:
-            pass
-        else:
-            tagline += tagline_temp
-        try:
-            tagline_temp = ('480p: %s seeds; ' %data.get('torrents').get('en').get('480p').get('seed'))
-        except:
-            pass
-        else:
-            tagline += tagline_temp
 
         return {
             'mediatype': 'movie',
@@ -82,11 +64,11 @@ class Movie(BaseContent):
             'duration': int(data.get('runtime'))*60 or 0,
             'year': int(data.get('year') or 0),
             'genre': u' / '.join(genre for genre in data.get('genres', [])) or None,
-            'code': data.get('imdb_id'),
-            'imdbnumber': data.get('imdb_id'),
-            'mpaa': data.get('certification'),
-            'plot': data.get('synopsis') or None,
-            'plotoutline': data.get('synopsis') or None,
+            'code': data.get('id'),
+            'imdbnumber': data.get('imdb'),
+            'mpaa': "R",
+            'plot': data.get('description') or None,
+            'plotoutline': data.get('description') or None,
             'trailer': cls._get_item_trailer(data),
 			"context_menu": [
                     (
@@ -107,29 +89,21 @@ class Movie(BaseContent):
     @staticmethod
     def _get_item_properties(data):
         return {
-            'fanart_image': data.get('images').get('fanart'),
+            'fanart_image': data.get('poster_big'),
         }
 
     @staticmethod
     def _get_item_trailer(data):
-        trailer = ''
-        if data.get('trailer'):
-            trailer_regex = re.match('^[^v]+v=(.{11}).*', data.get('trailer'))
-            try:
-                trailer_id = trailer_regex.group(1)
-                trailer = 'plugin://plugin.video.youtube/?action=play_video&videoid=%s' % trailer_id
-            except:
-                pass
-        return trailer
+        return 'plugin://plugin.video.youtube/?action=play_video&videoid=%s' % data.get('trailer')
 
     @staticmethod
     def _get_torrents_information(data):
         torrents = {}
-        for quality, torrent_info in data.get('torrents').get('en', {}).items():
-            if quality in settings.QUALITIES:
+        for item in data.get('items').items():
+            if(item.get('quality') in settings.QUALITIES):
                 torrents.update({
-                    quality: torrent_info.get('url'),
-                    '{0}size'.format(quality): torrent_info.get('size'),
+                    quality: item.get('torrent_magnet'),
+                    '{0}size'.format(item.get('quality')): item.get('size_bytes')
                 })
         return torrents
 
@@ -263,7 +237,7 @@ def _search(proxy, dom, query, page, **kwargs):
     '''
     return {
         'proxies': dom,
-        'path': "/tv/movies/%s" %page,
+        'path': "/list",
         'params': {
             'page': page,
             'quality': 'all',
@@ -281,7 +255,7 @@ def _search_build(data, query, page, **kwargs):
        :return: Return a dict
     '''
     items = []
-    for movie in data:
+    for movie in data.get('MovieList'):
         item = _create_item(movie)
         if item:
             items.append(item)
