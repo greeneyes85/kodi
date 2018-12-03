@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.kodipopcorntime" name="KODI Popcorn Time" version="1.7.2" provider-name="Markop159">
+<addon id="plugin.video.kodipopcorntime" name="Popcorn Time" version="1.7.3" provider-name="Valentin Ghica">
     <requires>
         <import addon="xbmc.python" version="2.14.0"/>
     </requires>
